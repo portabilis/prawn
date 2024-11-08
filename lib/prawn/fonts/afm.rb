@@ -109,7 +109,8 @@ module Prawn
       # is replaced with a string in WinAnsi encoding.
       #
       def normalize_encoding(text)
-        text.encode('windows-1252')
+        text = remove_not_encodable_chars(text)
+        text.encode("windows-1252")
       rescue ::Encoding::InvalidByteSequenceError,
              ::Encoding::UndefinedConversionError
 
@@ -154,7 +155,21 @@ module Prawn
 
       private
 
-      def register(_subset)
+      # Remove characters that can not be encoded, replacing with "?"
+      def remove_not_encodable_chars(text)
+        new_text = ""
+        text.each_char do |char|
+          begin
+            new_char = char.encode("windows-1252")
+          rescue Exception
+            new_char = "?"
+          end
+          new_text += new_char
+        end
+        new_text
+      end
+
+      def register(subset)
         font_dict = {
           Type: :Font,
           Subtype: :Type1,

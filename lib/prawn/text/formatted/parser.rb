@@ -14,24 +14,24 @@ module Prawn
       class Parser
         # @group Extension API
 
-        PARSER_REGEX =
-          begin
-            regex_string = "\n|" \
-                          '<b>|</b>|' \
-                          '<i>|</i>|' \
-                          '<u>|</u>|' \
-                          '<strikethrough>|</strikethrough>|' \
-                          '<sub>|</sub>|' \
-                          '<sup>|</sup>|' \
-                          '<link[^>]*>|</link>|' \
-                          '<color[^>]*>|</color>|' \
-                          '<font[^>]*>|</font>|' \
-                          '<strong>|</strong>|' \
-                          '<em>|</em>|' \
-                          '<a[^>]*>|</a>|' \
-                          "[^<\n]+"
-            Regexp.new(regex_string, Regexp::MULTILINE)
-          end
+        PARSER_REGEX = begin
+          regex_string = "\n|" \
+                         "<b>|</b>|" \
+                         "<i>|</i>|" \
+                         "<u>|</u>|" \
+                         "<p>|</p>|" \
+                         "<strikethrough>|</strikethrough>|" \
+                         "<sub>|</sub>|" \
+                         "<sup>|</sup>|" \
+                         "<link[^>]*>|</link>|" \
+                         "<color[^>]*>|</color>|" \
+                         "<font[^>]*>|</font>|" \
+                         "<strong>|</strong>|" \
+                         "<em>|</em>|" \
+                         "<a[^>]*>|</a>|" \
+                         "[^<\n]+"
+          Regexp.new(regex_string, Regexp::MULTILINE)
+        end
 
         def self.format(string, *_args)
           tokens = string.gsub(%r{<br\s*/?>}, "\n").scan(PARSER_REGEX)
@@ -39,28 +39,28 @@ module Prawn
         end
 
         def self.to_string(array)
-          prefixes = {
-            bold: '<b>',
-            italic: '<i>',
-            underline: '<u>',
-            strikethrough: '<strikethrough>',
-            subscript: '<sub>',
-            superscript: '<sup>'
-          }
-          suffixes = {
-            bold: '</b>',
-            italic: '</i>',
-            underline: '</u>',
-            strikethrough: '</strikethrough>',
-            subscript: '</sub>',
-            superscript: '</sup>'
-          }
-          array.map do |hash|
-            prefix = ''
-            suffix = ''
-            hash[:styles]&.each do |style|
-              prefix += prefixes[style]
-              suffix = suffixes[style] + suffix
+          prefixes = { :bold => "<b>",
+                       :italic => "<i>",
+                       :underline => "<u>",
+                       :paragraph => "<p>",
+                       :strikethrough => "<strikethrough>",
+                       :subscript => "<sub>",
+                       :superscript => "<sup>" }
+          suffixes = { :bold => "</b>",
+                       :italic => "</i>",
+                       :underline => "</u>",
+                       :paragraph => "</p>",
+                       :strikethrough => "</strikethrough>",
+                       :subscript => "</sub>",
+                       :superscript => "</sup>" }
+          array.collect do |hash|
+            prefix = ""
+            suffix = ""
+            if hash[:styles]
+              hash[:styles].each do |style|
+                prefix = prefix + prefixes[style]
+                suffix = suffixes[style] + suffix
+              end
             end
 
             font = hash[:font] ? " name='#{hash[:font]}'" : nil
@@ -142,7 +142,9 @@ module Prawn
               styles << :italic
             when '<u>'
               styles << :underline
-            when '<strikethrough>'
+            when "<p>"
+              styles << :paragraph
+            when "<strikethrough>"
               styles << :strikethrough
             when '<sub>'
               styles << :subscript
@@ -154,7 +156,9 @@ module Prawn
               styles.delete(:italic)
             when '</u>'
               styles.delete(:underline)
-            when '</strikethrough>'
+            when "</p>"
+              styles.delete(:paragraph)
+            when "</strikethrough>"
               styles.delete(:strikethrough)
             when '</sub>'
               styles.delete(:subscript)
