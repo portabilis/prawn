@@ -1,5 +1,5 @@
-# encoding: UTF-8
-#
+# frozen_string_literal: true
+
 # prawn/view.rb : Implements a mixin for Prawn's DSL
 #
 # This is free software. Please see the LICENSE and COPYING files for details.
@@ -10,6 +10,12 @@ module Prawn
   #
   #     class Greeter
   #       include Prawn::View
+  #
+  #       # Optional override: allows you to set document options or even use
+  #       # a custom document class
+  #       def document
+  #         @document ||= Prawn::Document.new(page_size: 'A4')
+  #       end
   #
   #       def initialize(name)
   #         @name = name
@@ -63,10 +69,14 @@ module Prawn
 
     # Delegates all unhandled calls to object returned by +document+ method.
     # (which is an instance of Prawn::Document by default)
-    def method_missing(m, *a, &b)
-      return super unless document.respond_to?(m)
+    def method_missing(method_name, *arguments, &block)
+      return super unless document.respond_to?(method_name)
 
-      document.send(m, *a, &b)
+      document.public_send(method_name, *arguments, &block)
+    end
+
+    def respond_to_missing?(method_name, _include_all = false)
+      document.respond_to?(method_name) || super
     end
 
     # Syntactic sugar that uses +instance_eval+ under the hood to provide
@@ -77,8 +87,8 @@ module Prawn
     #      say_goodbye
     #    end
     #
-    def update(&b)
-      instance_eval(&b)
+    def update(&block)
+      instance_eval(&block)
     end
 
     # Syntatic sugar that calls +document.render_file+ under the hood.

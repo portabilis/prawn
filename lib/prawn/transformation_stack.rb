@@ -1,14 +1,15 @@
-# encoding: utf-8
-#
-# transformation_stack.rb : Stores the transformations that have been applied to the document
+# frozen_string_literal: true
+
+# transformation_stack.rb : Stores the transformations that have been applied to
+# the document
 #
 # Copyright 2015, Roger Nesbitt. All Rights Reserved.
 #
 # This is free software. Please see the LICENSE and COPYING files for details.
-#
 
 require 'matrix'
 
+# rubocop: disable Metrics/ParameterLists, Naming/MethodParameterName
 module Prawn
   module TransformationStack
     def add_to_transformation_stack(a, b, c, d, e, f)
@@ -22,7 +23,7 @@ module Prawn
     end
 
     def restore_transformation_stack
-      @transformation_stack.pop if @transformation_stack
+      @transformation_stack&.pop
     end
 
     def current_transformation_matrix_with_translation(x = 0, y = 0)
@@ -40,3 +41,4 @@ module Prawn
     end
   end
 end
+# rubocop: enable Metrics/ParameterLists, Naming/MethodParameterName

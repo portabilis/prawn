@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 # color.rb : Implements color handling
 #
@@ -27,11 +27,12 @@ module Prawn
       #
       def fill_color(*color)
         return current_fill_color if color.empty?
+
         self.current_fill_color = process_color(*color)
         set_fill_color
       end
 
-      alias_method :fill_color=, :fill_color
+      alias fill_color= fill_color
 
       # Sets or returns the line stroking color.
       #
@@ -49,12 +50,13 @@ module Prawn
       #
       def stroke_color(*color)
         return current_stroke_color if color.empty?
+
         color = process_color(*color)
         self.current_stroke_color = color
         set_stroke_color(color)
       end
 
-      alias_method :stroke_color=, :stroke_color
+      alias stroke_color= stroke_color
 
       module_function
 
@@ -65,7 +67,7 @@ module Prawn
       #   => "ff7808"
       #
       def rgb2hex(rgb)
-        rgb.map { |e| "%02x" % e }.join
+        rgb.map { |e| format '%<value>02x', value: e }.join
       end
 
       # Converts hex string into RGB value array:
@@ -74,27 +76,33 @@ module Prawn
       #  => [255, 120, 8]
       #
       def hex2rgb(hex)
-        r, g, b = hex[0..1], hex[2..3], hex[4..5]
+        r = hex[0..1]
+        g = hex[2..3]
+        b = hex[4..5]
         [r, g, b].map { |e| e.to_i(16) }
       end
 
       private
 
       def process_color(*color)
-        case(color.size)
+        case color.size
         when 1
           color[0]
         when 4
           color
         else
-          fail ArgumentError, 'wrong number of arguments supplied'
+          raise ArgumentError, 'wrong number of arguments supplied'
         end
       end
 
       def color_type(color)
         case color
         when String
-          :RGB
+          if /\A\h{6}\z/.match?(color)
+            :RGB
+          else
+            raise ArgumentError, "Unknown type of color: #{color.inspect}"
+          end
         when Array
           case color.length
           when 3
@@ -102,7 +110,7 @@ module Prawn
           when 4
             :CMYK
           else
-            fail ArgumentError, "Unknown type of color: #{color.inspect}"
+            raise ArgumentError, "Unknown type of color: #{color.inspect}"
           end
         end
       end
@@ -119,7 +127,7 @@ module Prawn
       end
 
       def color_to_s(color)
-        normalize_color(color).map { |c| '%.3f' % c }.join(' ')
+        PDF::Core.real_params normalize_color(color)
       end
 
       def color_space(color)
@@ -131,38 +139,44 @@ module Prawn
         end
       end
 
-      COLOR_SPACES = [:DeviceRGB, :DeviceCMYK, :Pattern]
+      COLOR_SPACES = %i[DeviceRGB DeviceCMYK Pattern].freeze
 
       def set_color_space(type, color_space)
         # don't set the same color space again
-        return if current_color_space(type) == color_space && !state.page.in_stamp_stream?
+        if current_color_space(type) == color_space &&
+            !state.page.in_stamp_stream?
+          return
+        end
+
         set_current_color_space(color_space, type)
 
         unless COLOR_SPACES.include?(color_space)
-          fail ArgumentError, "unknown color space: '#{color_space}'"
+          raise ArgumentError, "unknown color space: '#{color_space}'"
         end
 
-        operator = case type
-                   when :fill
-                     'cs'
-                   when :stroke
-                     'CS'
-                   else
-                     fail ArgumentError, "unknown type '#{type}'"
-                   end
+        operator =
+          case type
+          when :fill
+            'cs'
+          when :stroke
+            'CS'
+          else
+            raise ArgumentError, "unknown type '#{type}'"
+          end
 
         renderer.add_content "/#{color_space} #{operator}"
       end
 
       def set_color(type, color, options = {})
-        operator = case type
-                   when :fill
-                     'scn'
-                   when :stroke
-                     'SCN'
-                   else
-                     fail ArgumentError, "unknown type '#{type}'"
-                   end
+        operator =
+          case type
+          when :fill
+            'scn'
+          when :stroke
+            'SCN'
+          else
+            raise ArgumentError, "unknown type '#{type}'"
+          end
 
         if options[:pattern]
           set_color_space type, :Pattern
@@ -187,8 +201,6 @@ module Prawn
         set_stroke_color
       end
 
-      private
-
       def current_color_space(type)
         graphic_state.color_space[type]
       end
@@ -212,14 +224,6 @@ module Prawn
 
       def current_stroke_color=(color)
         graphic_state.stroke_color = color
-      end
-
-      def write_fill_color
-        write_color(current_fill_color, 'scn')
-      end
-
-      def write_stroke_color
-        write_color(current_fill_color, 'SCN')
       end
 
       def write_color(color, operator)

@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 # text/rectangle.rb : Implements text boxes
 #
@@ -7,7 +7,7 @@
 # This is free software. Please see the LICENSE and COPYING files for details.
 #
 
-require_relative "formatted/box"
+require_relative 'formatted/box'
 
 module Prawn
   module Text
@@ -52,7 +52,8 @@ module Prawn
     #     <tt>[x, y]</tt>. The upper left corner of the box
     #     [@document.bounds.left, @document.bounds.top]
     # <tt>:width</tt>::
-    #     <tt>number</tt>. The width of the box [@document.bounds.right - @at[0]]
+    #     <tt>number</tt>. The width of the box
+    #     [@document.bounds.right - @at[0]]
     # <tt>:height</tt>::
     #     <tt>number</tt>. The height of the box [default_height()]
     # <tt>:direction</tt>::
@@ -60,7 +61,7 @@ module Prawn
     #     or right-to-left) [value of document.text_direction]
     # <tt>:fallback_fonts</tt>::
     #     An array of font names. Each name must be the name of an AFM font or
-    #     the name that was used to register a family of TTF fonts (see
+    #     the name that was used to register a family of external fonts (see
     #     Prawn::Document#font_families). If present, then each glyph will be
     #     rendered using the first font that includes the glyph, starting with
     #     the current font and then moving through :fallback_fonts from
@@ -82,7 +83,8 @@ module Prawn
     #     <tt>number</tt>. Additional space between lines [value of
     #     document.default_leading]
     # <tt>:single_line</tt>::
-    #     <tt>boolean</tt>. If true, then only the first line will be drawn [false]
+    #     <tt>boolean</tt>. If true, then only the first line will be drawn
+    #     [false]
     # <tt>:overflow</tt>::
     #     <tt>:truncate</tt>, <tt>:shrink_to_fit</tt>, or <tt>:expand</tt>
     #     This controls the behavior when the amount of text
@@ -105,13 +107,15 @@ module Prawn
       options = options.dup
       options[:document] = self
 
-      box = if p = options.delete(:inline_format)
-              p = [] unless p.is_a?(Array)
-              array = self.text_formatter.format(string, *p)
-              Text::Formatted::Box.new(array, options)
-            else
-              Text::Box.new(string, options)
-            end
+      box =
+        if options[:inline_format]
+          p = options.delete(:inline_format)
+          p = [] unless p.is_a?(Array)
+          array = text_formatter.format(string, *p)
+          Text::Formatted::Box.new(array, options)
+        else
+          Text::Box.new(string, options)
+        end
 
       box.render
     end
@@ -126,12 +130,12 @@ module Prawn
     #
     class Box < Prawn::Text::Formatted::Box
       def initialize(string, options = {})
-        super([{ :text => string }], options)
+        super([{ text: string }], options)
       end
 
       def render(flags = {})
         leftover = super(flags)
-        leftover.collect { |hash| hash[:text] }.join
+        leftover.map { |hash| hash[:text] }.join
       end
     end
   end

@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 # core/text/formatted/arranger.rb : Implements a data structure for 2-stage
 #                                   processing of lines of formatted text
@@ -13,6 +13,25 @@ module Prawn
       # @private
 
       class Arranger #:nodoc:
+        class NotFinalized < StandardError
+          DEFAULT_MESSAGE = 'Lines must be finalized'
+          MESSAGE_WITH_METHOD = 'Lines must be finalized before calling #%<method>s'
+
+          def initialize(message = DEFAULT_MESSAGE, method: nil)
+            if method && message == DEFAULT_MESSAGE
+              super format(MESSAGE_WITH_METHOD, method: method)
+            else
+              super message
+            end
+          end
+        end
+
+        class BadFontFamily < StandardError
+          def initialize(message = 'Bad font family')
+            super
+          end
+        end
+
         attr_reader :max_line_height
         attr_reader :max_descender
         attr_reader :max_ascender
@@ -33,30 +52,33 @@ module Prawn
 
         def space_count
           unless finalized
-            fail "Lines must be finalized before calling #space_count"
+            raise NotFinalized.new(method: 'space_count')
           end
 
-          @fragments.inject(0) do |sum, fragment|
+          @fragments.reduce(0) do |sum, fragment|
             sum + fragment.space_count
           end
         end
 
         def line_width
           unless finalized
-            fail "Lines must be finalized before calling #line_width"
+            raise raise NotFinalized.new(method: 'line_width')
           end
 
-          @fragments.inject(0) do |sum, fragment|
+          @fragments.reduce(0) do |sum, fragment|
             sum + fragment.width
           end
         end
 
         def line
           unless finalized
-            fail "Lines must be finalized before calling #line"
+            raise NotFinalized.new(method: 'line')
           end
 
-          @fragments.collect do |fragment|
+          @fragments.map do |fragment|
+            fragment.text.dup.encode(::Encoding::UTF_8)
+          rescue ::Encoding::InvalidByteSequenceError,
+                 ::Encoding::UndefinedConversionError
             fragment.text.dup.force_encoding(::Encoding::UTF_8)
           end.join
         end
@@ -70,12 +92,14 @@ module Prawn
             text = hash[:text]
             format_state = hash.dup
             format_state.delete(:text)
-            fragment = Prawn::Text::Formatted::Fragment.new(text,
-                                                            format_state,
-                                                            @document)
+            fragment = Prawn::Text::Formatted::Fragment.new(
+              text,
+              format_state,
+              @document
+            )
             @fragments << fragment
-            set_fragment_measurements(fragment)
-            set_line_measurement_maximums(fragment)
+            self.fragment_measurements = fragment
+            self.line_measurement_maximums = fragment
           end
         end
 
@@ -84,7 +108,7 @@ module Prawn
           @unconsumed = []
           array.each do |hash|
             hash[:text].scan(/[^\n]+|\n/) do |line|
-              @unconsumed << hash.merge(:text => line)
+              @unconsumed << hash.merge(text: line)
             end
           end
         end
@@ -100,12 +124,12 @@ module Prawn
         end
 
         def finished?
-          @unconsumed.length == 0
+          @unconsumed.empty?
         end
 
         def next_string
           if finalized
-            fail "Lines must not be finalized when calling #next_string"
+            raise NotFinalized.new(method: 'next_string')
           end
 
           next_unconsumed_hash = @unconsumed.shift
@@ -146,21 +170,23 @@ module Prawn
             font = current_format_state[:font]
             size = current_format_state[:size]
             character_spacing = current_format_state[:character_spacing] ||
-                                @document.character_spacing
+              @document.character_spacing
             styles = current_format_state[:styles]
-            font_style = font_style(styles)
           else
             font = fragment.font
             size = fragment.size
             character_spacing = fragment.character_spacing
             styles = fragment.styles
-            font_style = font_style(styles)
           end
+          font_style = font_style(styles)
 
           @document.character_spacing(character_spacing) do
             if font || font_style != :normal
-              fail "Bad font family" unless @document.font.family
-              @document.font(font || @document.font.family, :style => font_style) do
+              raise BadFontFamily unless @document.font.family
+
+              @document.font(
+                font || @document.font.family, style: font_style
+              ) do
                 apply_font_size(size, styles, &block)
               end
             else
@@ -171,6 +197,7 @@ module Prawn
 
         def update_last_string(printed, unprinted, normalized_soft_hyphen = nil)
           return if printed.nil?
+
           if printed.empty?
             @consumed.pop
           else
@@ -181,7 +208,7 @@ module Prawn
           end
 
           unless unprinted.empty?
-            @unconsumed.unshift(@current_format_state.merge(:text => unprinted))
+            @unconsumed.unshift(@current_format_state.merge(text: unprinted))
           end
 
           load_previous_format_state if printed.empty?
@@ -189,7 +216,7 @@ module Prawn
 
         def retrieve_fragment
           unless finalized
-            fail "Lines must be finalized before fragments can be retrieved"
+            raise NotFinalized, 'Lines must be finalized before fragments can be retrieved'
           end
 
           @fragments.shift
@@ -197,17 +224,18 @@ module Prawn
 
         def repack_unretrieved
           new_unconsumed = []
+          # rubocop: disable Lint/AssignmentInCondition
           while fragment = retrieve_fragment
+            # rubocop: enable Lint/AssignmentInCondition
             fragment.include_trailing_white_space!
-            new_unconsumed << fragment.format_state.merge(:text => fragment.text)
+            new_unconsumed << fragment.format_state.merge(text: fragment.text)
           end
           @unconsumed = new_unconsumed.concat(@unconsumed)
         end
 
         def font_style(styles)
-          if styles.nil?
-            :normal
-          elsif styles.include?(:bold) && styles.include?(:italic)
+          styles = Array(styles)
+          if styles.include?(:bold) && styles.include?(:italic)
             :bold_italic
           elsif styles.include?(:bold)
             :bold
@@ -230,19 +258,20 @@ module Prawn
           end
         end
 
-        def apply_font_size(size, styles)
+        def apply_font_size(size, styles, &block)
           if subscript?(styles) || superscript?(styles)
             relative_size = 0.583
-            if size.nil?
-              size = @document.font_size * relative_size
-            else
-              size = size * relative_size
-            end
+            size =
+              if size.nil?
+                @document.font_size * relative_size
+              else
+                size * relative_size
+              end
           end
           if size.nil?
             yield
           else
-            @document.font_size(size) { yield }
+            @document.font_size(size, &block)
           end
         end
 
@@ -274,20 +303,31 @@ module Prawn
           end
         end
 
-        def set_fragment_measurements(fragment)
+        def fragment_measurements=(fragment)
           apply_font_settings(fragment) do
-            fragment.width = @document.width_of(fragment.text,
-                                                :kerning => @kerning)
+            fragment.width = @document.width_of(
+              fragment.text,
+              kerning: @kerning
+            )
             fragment.line_height = @document.font.height
             fragment.descender = @document.font.descender
             fragment.ascender = @document.font.ascender
           end
         end
 
-        def set_line_measurement_maximums(fragment)
-          @max_line_height = [defined?(@max_line_height) && @max_line_height, fragment.line_height].compact.max
-          @max_descender = [defined?(@max_descender) && @max_descender, fragment.descender].compact.max
-          @max_ascender = [defined?(@max_ascender) && @max_ascender, fragment.ascender].compact.max
+        def line_measurement_maximums=(fragment)
+          @max_line_height = [
+            defined?(@max_line_height) && @max_line_height,
+            fragment.line_height
+          ].compact.max
+          @max_descender = [
+            defined?(@max_descender) && @max_descender,
+            fragment.descender
+          ].compact.max
+          @max_ascender = [
+            defined?(@max_ascender) && @max_ascender,
+            fragment.ascender
+          ].compact.max
         end
       end
     end

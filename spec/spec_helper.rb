@@ -1,41 +1,38 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 puts "Prawn specs: Running on Ruby Version: #{RUBY_VERSION}"
 
-require "bundler"
-Bundler.setup
-
-if ENV["COVERAGE"]
-  require "simplecov"
+if ENV['COVERAGE']
+  require 'simplecov'
   SimpleCov.start do
-    add_filter "/spec/"
+    add_filter '/spec/'
   end
 end
 
-require_relative "../lib/prawn"
+require_relative '../lib/prawn'
 
 Prawn.debug = true
-Prawn::Font::AFM.hide_m17n_warning = true
+Prawn::Fonts::AFM.hide_m17n_warning = true
 
-require "rspec"
-require "pdf/reader"
-require "pdf/inspector"
+require 'rspec'
+require 'pdf/reader'
+require 'pdf/inspector'
 
 # Requires supporting ruby files with custom matchers and macros, etc,
 # in spec/extensions/ and its subdirectories.
-Dir[File.dirname(__FILE__) + "/extensions/**/*.rb"].each { |f| require f }
+Dir[File.join(__dir__, 'extensions', '**', '*.rb')].sort.each { |f| require f }
 
 RSpec.configure do |config|
   config.include EncodingHelpers
 end
 
-def create_pdf(klass = Prawn::Document)
-  @pdf = klass.new(:margin => 0)
+def create_pdf(klass = Prawn::Document, &block)
+  klass.new(margin: 0, &block)
 end
 
 RSpec::Matchers.define :have_parseable_xobjects do
   match do |actual|
-    expect { PDF::Inspector::XObject.analyze(actual.render) }.not_to raise_error
+    expect { PDF::Inspector::XObject.analyze(actual.render) }.to_not raise_error
     true
   end
   failure_message do |actual|
@@ -44,6 +41,8 @@ RSpec::Matchers.define :have_parseable_xobjects do
 end
 
 # Make some methods public to assist in testing
-module Prawn::Graphics
-  public :map_to_absolute
-end
+# module Prawn
+#   module Graphics
+#     public :map_to_absolute
+#   end
+# end

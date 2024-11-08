@@ -1,5 +1,221 @@
 ## PrawnPDF master branch
 
+## PrawnPDF 2.4.0
+
+### Added support for Ruby 3
+
+(Alexander Mankuta)
+
+### Fixed transformation matrix serialization
+
+(Alexander Mankuta, [#1182](https://github.com/prawnpdf/prawn/pull/1182))
+
+## PrawnPDF 2.3.0
+
+### Added OpenType Font Support
+
+TTFunk gained support for OpenType fonts thanks to great work by Cameron Dutro.
+
+Now you can use OTF fonts in your documents.
+
+(Alexander Mankuta)
+
+### Improved color string validation
+
+(Brendan Thomas, [#1021](https://github.com/prawnpdf/prawn/pull/1021))
+
+### Added documentation about document configuration with `Prawn::View`
+
+(Arnaud Joubay, [#1112](https://github.com/prawnpdf/prawn/pull/1112))
+
+### Fixed `character_spacing` effect on text width calculation
+
+Extra spacing was applied to the end of string which resulted in visually
+incorrect center/right alligned text.
+
+(Matjaz Gregoric, [#1117](https://github.com/prawnpdf/prawn/pull/1117))
+
+### Fixed instance variable `@italic_angle` not initialized
+
+(Rostislav Svoboda, [#1095](https://github.com/prawnpdf/prawn/pull/1095))
+
+### Added a method to delete pages of the document by index
+
+(David Silveira, [#1092](https://github.com/prawnpdf/prawn/pull/1092))
+
+### Correctly handle image pathnames
+
+Prawn used to not close IOs passed to `image`. This prevented file deletion. The
+case is handled correctly now.
+
+(Guido Gloor Modjib, [#1090](https://github.com/prawnpdf/prawn/pull/1090))
+
+### Stricter validation of text alignment mode
+
+(Luciano Sousa, [#1057](https://github.com/prawnpdf/prawn/pull/1057))
+
+### Fixed `Prawn::View#respond_to_missing?` method signature
+
+When you use `Prawn::View` mixin to create custom class that extends Prawn's
+functionality, the method `respond_to?` was giving an error when called with a
+missing method.
+
+(Vitor Arimitsu, [#1065](https://github.com/prawnpdf/prawn/pull/1065))
+
+### Updated list of supported Rubies
+
+* Added Ruby 2.6 support
+* Added Ruby 2.7 support
+* Added JRuby 9.2 support
+
+* Dropped Ruby 2.2, 2.3 & 2.4 support
+* Dropped JRuby 9.1 support
+
+Ruby 2.2, 2.3 & 2.4 are not supported upstream any more.
+
+(Alexander Mankuta)
+
+### Fixed gradient cache key collision
+
+Packing gradient attributes down to 8-bit values causes collisions when
+generating the SHA1 digest.
+
+(Paul Jackson, [#1049](https://github.com/prawnpdf/prawn/pull/1049))
+
+### Unknown font message
+
+Provide more detail in error message about unknown font.
+
+(Dan Allen, [#1045](https://github.com/prawnpdf/prawn/pull/1045))
+
+### Fixed double require
+
+Remove superfluous pdf-core requires
+
+(Matt Patterson, [#1032](https://github.com/prawnpdf/prawn/pull/1032)
+
+## PrawnPDF 2.2.2
+
+Relax pdf-inspector depspec.
+
+(Alexander Mankuta)
+
+## PrawnPDF 2.2.1
+
+Fixed margins on individual pages.
+
+(Eric Hankins, [#1003](https://github.com/prawnpdf/prawn/pull/1003))
+
+## PrawnPDF 2.2.0
+
+### Added support of TTC fonts
+
+You can use TTC fonts with Prawn now.
+
+(Jamis Buck, [#1002](https://github.com/prawnpdf/prawn/pull/1007))
+
+### Join style is validated now
+
+Previously it was possible to specify anything for join style which could result
+in and invalid document. It's impossible now.
+
+(Tim Woodbury, [#989](https://github.com/prawnpdf/prawn/pull/989))
+
+
+### Fixed handling of NBSP in Windows-1252 text
+
+NBSP was improperly treated as a regular space in Windows-1252 encoded text.
+
+
+(Alexander Mankuta, [#939](https://github.com/prawnpdf/prawn/issues/939))
+
+### Fixed wrong leading of one-line paragraphs
+
+Extra leading was erroneously added to one-line paragraphs.
+
+(Marcin Skirzynski, [#922](https://github.com/prawnpdf/prawn/pull/922))
+
+
+### Fixed dashing
+
+Dashing now allows 0 length segments. It now fully conforms to PDF spec.
+
+(Thomas Leitner, [#1001](https://github.com/prawnpdf/prawn/issues/1001))
+
+
+### Code of Conduct
+
+PrawnPDF now has [Code of Conduct].
+
+[Code of Conduct]: https://github.com/prawnpdf/prawn/blob/master/CODE_OF_CONDUCT.md
+
+
+### Improved generated document consistency
+
+There was a number of places in code that generated names for different
+resources semi-randomly. That made hard to verify if document has any unexpected
+changes. There was some effort to improve consistency.
+
+(Alexander Mankuta)
+
+
+### Improved gradients
+
+Gradients can have multiple stops to blend more than two colors
+
+Previously, only two colors could be specified in a gradient: the start and end
+colors.  This change allows any number of colors to be specified, along with the
+position between 0 and 1 as to where they should be displayed.
+
+This change also comes with a change to the format of the `fill_gradient` and
+`stroke_gradient` methods.  You can continue to use the old method parameters
+and only specify two colors, or use the new keyword arguments to specify
+arbitrary stops.
+
+As a bonus, if you use the new method style, `apply_transformations` is set true
+automatically.
+
+(Roger Nesbitt, [#902](https://github.com/prawnpdf/prawn/issues/984))
+
+
+### Supported Rubies has changed
+
+* Removed MRI 2.0, JRuby 1.7, and Rubinius support
+* Added MRI 2.4 and JRuby 9k
+
+
+### Catch unexpected manual changes
+
+For a long time changes to manual were hard to spot because it was a manual
+process. There was no way to know for sure if the manual has changed or not.
+
+Now manual changes are caught during build.
+
+(Alexander Mankuta, [#949](https://github.com/prawnpdf/prawn/pull/949))
+
+
+### Validate colors passed in as strings must be valid hexadecimal
+
+Colors that were passed with a # would previously be misrepresented. Now
+any colors passed in as a string must be valid hexadecimal or they will
+raise an error.
+
+(Tom Prats, [#807](https://github.com/prawnpdf/prawn/issues/807), [#869](https://github.com/prawnpdf/prawn/issues/869))
+
+### Don't raise CannotFit when first fragment in array is a zero-width space
+
+When determining what formatted text will fit within a box that has a fixed
+width, don't raise a CannotFit error prematurely if the line begins with a
+zero-width fragment and the next fragment exceeds the width.
+
+Before finishing a line, the line is marked as not having more than one word
+if the accumulated width of the line is zero. This is a clear indication that
+the fragments previously visited did not produce any content (e.g., a
+zero-width space).
+
+(Dan Allen, [#984](https://github.com/prawnpdf/prawn/issues/984))
+
+
 ## PrawnPDF 2.1.0 -- 2016-02-29
 
 ### Added support for PNG images with indexed transparency

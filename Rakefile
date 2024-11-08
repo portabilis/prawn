@@ -1,49 +1,19 @@
-require "bundler"
-Bundler.setup
+# frozen_string_literal: true
 
-require 'rake'
-require 'rspec/core/rake_task'
-require 'yard'
-require 'rubygems/package_task'
-require 'rubocop/rake_task'
+GEMSPEC = File.expand_path('prawn.gemspec', __dir__)
+require 'prawn/dev/tasks'
 
-task :default => [:spec, :rubocop]
-
-desc "Run all rspec files"
-RSpec::Core::RakeTask.new("spec") do |c|
-  c.rspec_opts = "-t ~unresolved"
-end
-
-desc "Show library's code statistics"
-task :stats do
-  require 'code_statistics/code_statistics'
-  puts CodeStatistics::CodeStatistics.new(
-    [
-      ["Prawn", "lib"],
-      ["Specs", "spec"]
-    ]
-  ).to_s
-end
-
-YARD::Rake::YardocTask.new do |t|
-  t.options = ['--output-dir', 'doc/html']
-end
-task :docs => :yard
+task default: %i[spec rubocop]
 
 desc "Generate the 'Prawn by Example' manual"
 task :manual do
-  puts "Building manual..."
-  require File.expand_path(File.join(File.dirname(__FILE__), %w[manual contents]))
-  puts "The Prawn manual is available at manual.pdf. Happy Prawning!"
+  puts 'Building manual...'
+  require File.expand_path(File.join(__dir__, %w[manual contents]))
+  prawn_manual_document.render_file('manual.pdf')
+  puts 'The Prawn manual is available at manual.pdf. Happy Prawning!'
 end
 
-spec = Gem::Specification.load "prawn.gemspec"
-Gem::PackageTask.new(spec) do |pkg|
-  pkg.need_zip = true
-  pkg.need_tar = true
-end
-
-desc "Run a console with Prawn loaded"
+desc 'Run a console with Prawn loaded'
 task :console do
   require 'irb'
   require 'irb/completion'
@@ -53,5 +23,3 @@ task :console do
   ARGV.clear
   IRB.start
 end
-
-RuboCop::RakeTask.new

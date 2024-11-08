@@ -1,9 +1,9 @@
 # Prawn: Fast, Nimble PDF Generation For Ruby
 
-[![Gem Version](https://badge.fury.io/rb/prawn.png)](http://badge.fury.io/rb/prawn)
+[![Gem Version](https://badge.fury.io/rb/prawn.svg)](http://badge.fury.io/rb/prawn)
 [![Build Status](https://api.travis-ci.org/prawnpdf/prawn.svg?branch=master)](http://travis-ci.org/prawnpdf/prawn)
 [![Code Climate](https://codeclimate.com/github/prawnpdf/prawn/badges/gpa.svg)](https://codeclimate.com/github/prawnpdf/prawn)
-![Maintained: yes](https://img.shields.io/badge/maintained-yes-brightgreen.png)
+![Maintained: yes](https://img.shields.io/badge/maintained-yes-brightgreen.svg)
 
 Prawn is a pure Ruby PDF generation library that provides a lot of great
 functionality while trying to remain simple and reasonably performant. Here are
@@ -43,9 +43,10 @@ for rendering rich HTML documents.
 ## Supported Ruby Versions and Implementations
 
 Because Prawn is pure Ruby and all of its runtime dependencies are maintained by
-us, it should work pretty much anywhere. We officially support MRI (2.1, 2.2,
-and 2.3) and JRuby 9000, however we will accept patches to fix problems on other
-Ruby platforms if they aren't too invasive.
+us, it should work pretty much anywhere. We officially support all Ruby versions
+suported by Ruby Core Team and JRuby versions of matching Ruby version. However
+we will accept patches to fix problems on other Ruby platforms if they aren't
+too invasive.
 
 ## Installing Prawn
 
@@ -86,10 +87,8 @@ build the manual, here's what you need to do:
 1. Clone the repository
 2. Switch to the stable branch (optional, stay on master for development
    version)
-3. Install bundler if necessary
-4. Run `bundle install`
-5. Run `bundle exec rake manual`, which will generate _manual.pdf_ in the
-   project root
+3. Run `gem install -g`
+4. Run `rake manual`, which will generate _manual.pdf_ in the project root
 
 ## Release Policies
 
@@ -101,10 +100,6 @@ always be safe upgrades, but major updates can introduce incompatibilities.
 Be sure to read the release notes in
 [CHANGELOG.md](https://github.com/prawnpdf/prawn/blob/master/CHANGELOG.md) each
 time we cut a new release, and lock your gems accordingly.
-
-The prawn team will release a new version of prawn every 6 weeks containing any
-new features and bug fixes that have been completed during the previous release
-cycle. We may release additional versions off cycle to fix major breakages.
 
 ## Support
 
@@ -121,6 +116,12 @@ samples and output where relevant. Do not post any information that should not
 be shared publicly, and be sure to reduce your example code as much as possible
 so that those who are responding to your question can more easily see what the
 issue might be.
+
+## Code of Conduct
+Prawn adheres to the [Contributor Covenant](CODE_OF_CONDUCT.md).
+Unacceptable behavior can be reported to conduct@prawnpdf.org which is monitored
+by the core team.
+
 
 ## Contributing
 
@@ -164,7 +165,6 @@ direction of the project.
 These are the folks to contact if you have a maintenance-related issue with
 Prawn:
 
-* Evan Sharp ([PacketMonkey](https://github.com/PacketMonkey))
 * Alexander Mankuta ([PointlessOne](https://github.com/PointlessOne))
 
 ### Inactive maintainers
@@ -178,6 +178,7 @@ actively involved in the project:
 * Daniel Nelson ([Bluejade](https://github.com/Bluejade))
 * Jonathan Greenberg ([jonsgreen](https://github.com/jonsgreen))
 * Jamis Buck ([jamis](https://github.com/jamis))
+* Evan Sharp ([PacketMonkey](https://github.com/PacketMonkey))
 
 ## License
 

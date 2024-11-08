@@ -1,5 +1,5 @@
-# encoding: utf-8
-#
+# frozen_string_literal: true
+
 # There are two drawing primitives in Prawn: <code>fill</code> and
 # <code>stroke</code>.
 #
@@ -17,9 +17,8 @@
 # Most of the methods which define drawing paths have methods of the same name
 # starting with stroke_ and fill_ which create the drawing path and then stroke
 # or fill it.
-#
-require File.expand_path(File.join(File.dirname(__FILE__),
-                                   %w[.. example_helper]))
+
+require_relative '../example_helper'
 
 filename = File.basename(__FILE__).gsub('.rb', '.pdf')
 Prawn::ManualBuilder::Example.generate(filename) do
@@ -34,7 +33,7 @@ Prawn::ManualBuilder::Example.generate(filename) do
 
   # With block
   stroke { line [200, 200], [300, 150] }
-  fill   { rectangle [200, 100], 100, 100 }
+  fill { rectangle [200, 100], 100, 100 }
 
   # Method hook
   stroke_line [400, 200], [500, 150]

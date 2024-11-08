@@ -1,5 +1,5 @@
-# encoding: utf-8
-#
+# frozen_string_literal: true
+
 # font_metric_cache.rb : The Prawn font class
 #
 # Copyright Dec 2012, Kenneth Kalmer. All Rights Reserved.
@@ -22,21 +22,28 @@ module Prawn
     end
 
     def width_of(string, options)
-      f = if options[:style]
-            # override style with :style => :bold
-            @document.find_font(@document.font.family, :style => options[:style])
-          else
-            @document.font
-          end
+      f =
+        if options[:style]
+          # override style with :style => :bold
+          @document.find_font(@document.font.family, style: options[:style])
+        else
+          @document.font
+        end
 
-      key = CacheEntry.new(f, options, string)
+      encoded_string = f.normalize_encoding(string)
 
-      unless length = @cache[ key ]
-        length = @cache[ key ] = f.compute_width_of(string, options)
+      key = CacheEntry.new(f, options, encoded_string)
+
+      @cache[key] ||= f.compute_width_of(encoded_string, options)
+
+      length = @cache[key]
+
+      character_count = @document.font.character_count(encoded_string)
+      if character_count.positive?
+        length += @document.character_spacing * (character_count - 1)
       end
 
-      length +
-        (@document.character_spacing * @document.font.character_count(string))
+      length
     end
   end
 end

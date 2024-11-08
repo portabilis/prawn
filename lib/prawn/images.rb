@@ -1,4 +1,7 @@
 # encoding: ASCII-8BIT
+
+# frozen_string_literal: true
+
 # images.rb : Implements PDF image embedding
 #
 # Copyright April 2008, James Healy, Gregory Brown.  All Rights Reserved.
@@ -17,16 +20,19 @@ module Prawn
     # images with alpha channels can be processor and memory intensive.)
     #
     # Arguments:
-    # <tt>file</tt>:: path to file or an object that responds to #read and #rewind
+    # <tt>file</tt>:: path to file or an object that responds to #read and
+    #   #rewind
     #
     # Options:
-    # <tt>:at</tt>:: an array [x,y] with the location of the top left corner of the image.
+    # <tt>:at</tt>:: an array [x,y] with the location of the top left corner of
+    #   the image.
     # <tt>:position</tt>::  One of (:left, :center, :right) or an x-offset
-    # <tt>:vposition</tt>::  One of (:top, :center, :center) or an y-offset
+    # <tt>:vposition</tt>::  One of (:top, :center, :bottom) or an y-offset
     # <tt>:height</tt>:: the height of the image [actual height of the image]
     # <tt>:width</tt>:: the width of the image [actual width of the image]
     # <tt>:scale</tt>:: scale the dimensions of the image proportionally
-    # <tt>:fit</tt>:: scale the dimensions of the image proportionally to fit inside [width,height]
+    # <tt>:fit</tt>:: scale the dimensions of the image proportionally to fit
+    #   inside [width,height]
     #
     #   Prawn::Document.generate("image2.pdf", :page_layout => :landscape) do
     #     pigs = "#{Prawn::DATADIR}/images/pigs.jpg"
@@ -52,7 +58,7 @@ module Prawn
     #   require "open-uri"
     #
     #   Prawn::Document.generate("remote_images.pdf") do
-    #     image open("http://prawn.majesticseacreature.com/media/prawn_logo.png")
+    #     image open("http://prawnpdf.org/media/prawn_logo.png")
     #   end
     #
     # This method returns an image info object which can be used to check the
@@ -60,8 +66,10 @@ module Prawn
     # (See also: Prawn::Images::PNG , Prawn::Images::JPG)
     #
     def image(file, options = {})
-      Prawn.verify_options [:at, :position, :vposition, :height,
-                            :width, :scale, :fit], options
+      Prawn.verify_options(
+        %i[at position vposition height width scale fit],
+        options
+      )
 
       pdf_obj, info = build_image_object(file)
       embed_image(pdf_obj, info, options)
@@ -74,8 +82,7 @@ module Prawn
     #
     # @private
     def build_image_object(file)
-      io = verify_and_open_image(file)
-      image_content = io.read
+      image_content = verify_and_read_image(file)
       image_sha1 = Digest::SHA1.hexdigest(image_content)
 
       # if this image has already been embedded, just reuse it
@@ -87,11 +94,13 @@ module Prawn
         info = Prawn.image_handler.find(image_content).new(image_content)
 
         # Bump PDF version if the image requires it
-        renderer.min_version(info.min_pdf_version) if info.respond_to?(:min_pdf_version)
+        if info.respond_to?(:min_pdf_version)
+          renderer.min_version(info.min_pdf_version)
+        end
 
         # Add the image to the PDF and register it in case we see it again.
         image_obj = info.build_pdf_object(self)
-        image_registry[image_sha1] = { :obj => image_obj, :info => info }
+        image_registry[image_sha1] = { obj: image_obj, info: info }
       end
 
       [image_obj, info]
@@ -117,15 +126,15 @@ module Prawn
       # add a reference to the image object to the current page
       # resource list and give it a label
       label = "I#{next_image_id}"
-      state.page.xobjects.merge!(label => pdf_obj)
+      state.page.xobjects[label] = pdf_obj
 
-      cm_params = PDF::Core.real_params([ w, 0, 0, h, x, y - h])
+      cm_params = PDF::Core.real_params([w, 0, 0, h, x, y - h])
       renderer.add_content("\nq\n#{cm_params} cm\n/#{label} Do\nQ")
     end
 
     private
 
-    def verify_and_open_image(io_or_path)
+    def verify_and_read_image(io_or_path)
       # File or IO
       if io_or_path.respond_to?(:rewind)
         io = io_or_path
@@ -135,54 +144,56 @@ module Prawn
         # read the file as binary so the size is calculated correctly
         # guard binmode because some objects acting io-like don't implement it
         io.binmode if io.respond_to?(:binmode)
-        return io
+        return io.read
       end
       # String or Pathname
       io_or_path = Pathname.new(io_or_path)
-      fail ArgumentError, "#{io_or_path} not found" unless io_or_path.file?
-      io = io_or_path.open('rb')
-      io
+      raise ArgumentError, "#{io_or_path} not found" unless io_or_path.file?
+
+      io_or_path.binread
     end
 
-    def image_position(w, h, options)
+    def image_position(width, height, options)
       options[:position] ||= :left
 
-      y = case options[:vposition]
-          when :top
-            bounds.absolute_top
-          when :center
-            bounds.absolute_top - (bounds.height - h) / 2.0
-          when :bottom
-            bounds.absolute_bottom + h
-          when Numeric
-            bounds.absolute_top - options[:vposition]
-          else
-            determine_y_with_page_flow(h)
-          end
+      y =
+        case options[:vposition]
+        when :top
+          bounds.absolute_top
+        when :center
+          bounds.absolute_top - (bounds.height - height) / 2.0
+        when :bottom
+          bounds.absolute_bottom + height
+        when Numeric
+          bounds.absolute_top - options[:vposition]
+        else
+          determine_y_with_page_flow(height)
+        end
 
-      x = case options[:position]
-          when :left
-            bounds.left_side
-          when :center
-            bounds.left_side + (bounds.width - w) / 2.0
-          when :right
-            bounds.right_side - w
-          when Numeric
-            options[:position] + bounds.left_side
-          end
+      x =
+        case options[:position]
+        when :left
+          bounds.left_side
+        when :center
+          bounds.left_side + (bounds.width - width) / 2.0
+        when :right
+          bounds.right_side - width
+        when Numeric
+          options[:position] + bounds.left_side
+        end
 
-      return [x, y]
+      [x, y]
     end
 
-    def determine_y_with_page_flow(h)
-      if overruns_page?(h)
+    def determine_y_with_page_flow(height)
+      if overruns_page?(height)
         bounds.move_past_bottom
       end
-      self.y
+      y
     end
 
-    def overruns_page?(h)
-      (self.y - h) < reference_bounds.absolute_bottom
+    def overruns_page?(height)
+      (y - height) < reference_bounds.absolute_bottom
     end
 
     def image_registry

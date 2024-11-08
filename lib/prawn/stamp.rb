@@ -1,5 +1,5 @@
-# encoding: utf-8
-#
+# frozen_string_literal: true
+
 # stamp.rb : Implements a repeatable stamp
 #
 # Copyright October 2009, Daniel Nelson. All Rights Reserved.
@@ -92,9 +92,9 @@ module Prawn
     end
 
     def stamp_dictionary(name)
-      fail Prawn::Errors::InvalidName if name.empty?
+      raise Prawn::Errors::InvalidName if name.empty?
       if stamp_dictionary_registry[name].nil?
-        fail Prawn::Errors::UndefinedObjectName
+        raise Prawn::Errors::UndefinedObjectName
       end
 
       dict = stamp_dictionary_registry[name]
@@ -105,20 +105,27 @@ module Prawn
     end
 
     def create_stamp_dictionary(name)
-      fail Prawn::Errors::InvalidName if name.empty?
-      fail Prawn::Errors::NameTaken unless stamp_dictionary_registry[name].nil?
+      raise Prawn::Errors::InvalidName if name.empty?
+      raise Prawn::Errors::NameTaken unless stamp_dictionary_registry[name].nil?
+
       # BBox origin is the lower left margin of the page, so we need
       # it to be the full dimension of the page, or else things that
       # should appear near the top or right margin are invisible
-      dictionary = ref!(:Type    => :XObject,
-                        :Subtype => :Form,
-                        :BBox    => [0, 0,
-                                     state.page.dimensions[2], state.page.dimensions[3]])
+      dictionary = ref!(
+        Type: :XObject,
+        Subtype: :Form,
+        BBox: [
+          0, 0,
+          state.page.dimensions[2], state.page.dimensions[3]
+        ]
+      )
 
       dictionary_name = "Stamp#{next_stamp_dictionary_id}"
 
-      stamp_dictionary_registry[name] = { :stamp_dictionary_name => dictionary_name,
-                                          :stamp_dictionary      => dictionary }
+      stamp_dictionary_registry[name] = {
+        stamp_dictionary_name: dictionary_name,
+        stamp_dictionary: dictionary
+      }
       dictionary
     end
 
@@ -127,7 +134,7 @@ module Prawn
     # to the /Annot dictionary of the object that contains the
     # call to the stamp object.
     def update_annotation_references(annots)
-      if annots && annots.any?
+      if annots&.any?
         state.page.dictionary.data[:Annots] ||= []
         state.page.dictionary.data[:Annots] |= annots
       end

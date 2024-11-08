@@ -1,12 +1,12 @@
-# encoding: utf-8
-#
+# frozen_string_literal: true
+
 # column_box.rb: Extends BoundingBox to allow for columns of text
 #
 # Author Paul Ostazeski.
 #
 # This is free software. Please see the LICENSE and COPYING files for details.
 
-require_relative "bounding_box"
+require_relative 'bounding_box'
 
 module Prawn
   class Document
@@ -36,10 +36,10 @@ module Prawn
 
     private
 
-    def init_column_box(user_block, options = {}, &init_block)
+    def init_column_box(user_block, options = {})
       parent_box = @bounding_box
 
-      init_block.call(parent_box)
+      yield(parent_box)
 
       self.y = @bounding_box.absolute_top
       user_block.call
@@ -55,7 +55,7 @@ module Prawn
       def initialize(document, parent, point, options = {}) #:nodoc:
         super
         @columns = options[:columns] || 3
-        @spacer  = options[:spacer] || @document.font_size
+        @spacer = options[:spacer] || @document.font_size
         @current_column = 0
         @reflow_margins = options[:reflow_margins]
       end
@@ -109,7 +109,7 @@ module Prawn
       def move_past_bottom
         @current_column = (@current_column + 1) % @columns
         @document.y = @y
-        if 0 == @current_column
+        if @current_column.zero?
           if @reflow_margins
             @y = @parent.absolute_top
           end

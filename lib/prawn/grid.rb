@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 # grid.rb: Provides a basic grid layout system for Prawn
 #
@@ -33,21 +33,21 @@ module Prawn
     #
     def grid(*args)
       @boxes ||= {}
-      return @boxes[args] if @boxes[args]
+      @boxes[args] ||=
+        begin
+          if args.empty?
+            @grid
+          else
+            g1, g2 = args
 
-      if args.empty?
-        @boxes[args] = @grid
-      else
-        g1, g2 = args
-
-        if g1.class == Array && g2.class == Array && g1.length == 2 && g2.length == 2
-          @boxes[args] = multi_box(single_box(*g1), single_box(*g2))
-        else
-          @boxes[args] = single_box(g1, g2)
+            if g1.is_a?(Array) && g2.is_a?(Array) &&
+                g1.length == 2 && g2.length == 2
+              multi_box(single_box(*g1), single_box(*g2))
+            else
+              single_box(g1, g2)
+            end
+          end
         end
-      end
-
-      @boxes[args]
     end
 
     # A Grid represents the entire grid system of a Page and calculates
@@ -56,14 +56,15 @@ module Prawn
     # @group Experimental API
     class Grid
       attr_reader :pdf, :columns, :rows, :gutter, :row_gutter, :column_gutter
+
       def initialize(pdf, options = {}) # :nodoc:
-        valid_options = [:columns, :rows, :gutter, :row_gutter, :column_gutter]
+        valid_options = %i[columns rows gutter row_gutter column_gutter]
         Prawn.verify_options valid_options, options
 
         @pdf = pdf
         @columns = options[:columns]
         @rows = options[:rows]
-        set_gutter(options)
+        apply_gutter(options)
       end
 
       # Calculates the base width of boxes.
@@ -77,10 +78,10 @@ module Prawn
       end
 
       # Diagnostic tool to show all of the grids.  Defaults to gray.
-      def show_all(color = "CCCCCC")
-        self.rows.times do |i|
-          self.columns.times do |j|
-            pdf.grid(i, j).show(color)
+      def show_all(color = 'CCCCCC')
+        rows.times do |row|
+          columns.times do |column|
+            pdf.grid(row, column).show(color)
           end
         end
       end
@@ -91,12 +92,13 @@ module Prawn
         (total.to_f - (gutter * (num - 1).to_f)) / num.to_f
       end
 
-      def set_gutter(options)
+      def apply_gutter(options)
         if options.key?(:gutter)
           @gutter = options[:gutter].to_f
-          @row_gutter, @column_gutter = @gutter, @gutter
+          @row_gutter = @gutter
+          @column_gutter = @gutter
         else
-          @row_gutter    = options[:row_gutter].to_f
+          @row_gutter = options[:row_gutter].to_f
           @column_gutter = options[:column_gutter].to_f
           @gutter = 0
         end
@@ -111,17 +113,17 @@ module Prawn
     class GridBox
       attr_reader :pdf
 
-      def initialize(pdf, i, j)
+      def initialize(pdf, rows, columns)
         @pdf = pdf
-        @i = i
-        @j = j
+        @rows = rows
+        @columns = columns
       end
 
       # Mostly diagnostic method that outputs the name of a box as
       # col_num, row_num
       #
       def name
-        "#{@i.to_s},#{@j.to_s}"
+        "#{@rows},#{@columns}"
       end
 
       # :nodoc
@@ -146,7 +148,7 @@ module Prawn
 
       # x-coordinate of left side
       def left
-        @left ||= (width + grid.column_gutter) * @j.to_f
+        @left ||= (width + grid.column_gutter) * @columns.to_f
       end
 
       # x-coordinate of right side
@@ -156,7 +158,7 @@ module Prawn
 
       # y-coordinate of the top
       def top
-        @top ||= total_height - ((height + grid.row_gutter) * @i.to_f)
+        @top ||= total_height - ((height + grid.row_gutter) * @rows.to_f)
       end
 
       # y-coordinate of the bottom
@@ -186,16 +188,16 @@ module Prawn
 
       # Creates a standard bounding box based on the grid box.
       def bounding_box(&blk)
-        pdf.bounding_box(top_left, :width => width, :height => height, &blk)
+        pdf.bounding_box(top_left, width: width, height: height, &blk)
       end
 
       # Diagnostic method
-      def show(grid_color = "CCCCCC")
-        self.bounding_box do
+      def show(grid_color = 'CCCCCC')
+        bounding_box do
           original_stroke_color = pdf.stroke_color
 
           pdf.stroke_color = grid_color
-          pdf.text self.name
+          pdf.text name
           pdf.stroke_bounds
 
           pdf.stroke_color = original_stroke_color
@@ -212,18 +214,20 @@ module Prawn
     # A MultiBox is specified by 2 Boxes and spans the areas between.
     #
     # @group Experimental API
-    class MultiBox < GridBox
-      def initialize(pdf, b1, b2)
+    class MultiBox
+      def initialize(pdf, box1, box2)
         @pdf = pdf
-        @bs = [b1, b2]
+        @boxes = [box1, box2]
       end
 
+      attr_reader :pdf
+
       def name
-        @bs.map(&:name).join(":")
+        @boxes.map(&:name).join(':')
       end
 
       def total_height
-        @bs[0].total_height
+        @boxes[0].total_height
       end
 
       def width
@@ -235,7 +239,7 @@ module Prawn
       end
 
       def gutter
-        @bs[0].gutter
+        @boxes[0].gutter
       end
 
       def left
@@ -254,33 +258,65 @@ module Prawn
         bottom_box.bottom
       end
 
+      def top_left
+        [left, top]
+      end
+
+      def top_right
+        [right, top]
+      end
+
+      def bottom_left
+        [left, bottom]
+      end
+
+      def bottom_right
+        [right, bottom]
+      end
+
+      def bounding_box(&blk)
+        pdf.bounding_box(top_left, width: width, height: height, &blk)
+      end
+
+      def show(grid_color = 'CCCCCC')
+        bounding_box do
+          original_stroke_color = pdf.stroke_color
+
+          pdf.stroke_color = grid_color
+          pdf.text name
+          pdf.stroke_bounds
+
+          pdf.stroke_color = original_stroke_color
+        end
+      end
+
       private
 
       def left_box
-        @left_box ||= @bs.min { |a, b| a.left <=> b.left }
+        @left_box ||= @boxes.min_by(&:left)
       end
 
       def right_box
-        @right_box ||= @bs.max { |a, b| a.right <=> b.right }
+        @right_box ||= @boxes.max_by(&:right)
       end
 
       def top_box
-        @top_box ||= @bs.max { |a, b| a.top <=> b.top }
+        @top_box ||= @boxes.max_by(&:top)
       end
 
       def bottom_box
-        @bottom_box ||= @bs.min { |a, b| a.bottom <=> b.bottom }
+        @bottom_box ||= @boxes.min_by(&:bottom)
       end
     end
 
     private
 
-    def single_box(i, j)
-      GridBox.new(self, i, j)
+    def single_box(rows, columns)
+      GridBox.new(self, rows, columns)
     end
 
-    def multi_box(b1, b2)
-      MultiBox.new(self, b1, b2)
+    def multi_box(box1, box2)
+      MultiBox.new(self, box1, box2)
     end
   end
 end

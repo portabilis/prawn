@@ -1,5 +1,5 @@
-# encoding: utf-8
-#
+# frozen_string_literal: true
+
 # The <code>font_size</code> method works just like the <code>font</code>
 # method.
 #
@@ -10,9 +10,8 @@
 # option to the text methods.
 #
 # The default font size is <code>12</code>.
-#
-require File.expand_path(File.join(File.dirname(__FILE__),
-                                   %w[.. example_helper]))
+
+require_relative '../example_helper'
 
 filename = File.basename(__FILE__).gsub('.rb', '.pdf')
 Prawn::ManualBuilder::Example.generate(filename) do
@@ -20,26 +19,26 @@ Prawn::ManualBuilder::Example.generate(filename) do
 
   move_down 10
   font_size 16
-  text "Yeah, something bigger!"
+  text 'Yeah, something bigger!'
 
   move_down 10
-  font_size(25) { text "Even bigger!" }
+  font_size(25) { text 'Even bigger!' }
 
   move_down 10
-  text "Back to 16 again."
+  text 'Back to 16 again.'
 
   move_down 10
-  text "Single line on 20 using the :size option.", :size => 20
+  text 'Single line on 20 using the :size option.', size: 20
 
   move_down 10
-  text "Back to 16 once more."
+  text 'Back to 16 once more.'
 
   move_down 10
-  font("Courier", :size => 10) do
-    text "Yeah, using Courier 10 courtesy of the font method."
+  font('Courier', size: 10) do
+    text 'Yeah, using Courier 10 courtesy of the font method.'
   end
 
   move_down 10
-  font("Helvetica", :size => 12)
-  text "Back to normal"
+  font('Helvetica', size: 12)
+  text 'Back to normal'
 end

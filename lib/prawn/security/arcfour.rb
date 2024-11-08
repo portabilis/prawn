@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 # Implementation of the "ARCFOUR" algorithm ("alleged RC4 (tm)"). Implemented
 # as described at:
@@ -39,7 +39,7 @@ class Arcfour
   end
 
   def encrypt(string)
-    string.unpack('c*').map{ |byte| byte ^ key_byte }.pack('c*')
+    string.unpack('c*').map { |byte| byte ^ key_byte }.pack('c*')
   end
 
   private

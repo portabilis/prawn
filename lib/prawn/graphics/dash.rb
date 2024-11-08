@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 # dash.rb : Implements stroke dashing
 #
@@ -28,8 +28,9 @@ module Prawn
       #       3 on, 2 off, 3 on, 2 off, ...
       #
       # * If the parameter +length+ is an array, it specifies the
-      #   lengths of alternating dashes and gaps. The :space option is
-      #   ignored in this case.
+      #   lengths of alternating dashes and gaps. The numbers must be
+      #   non-negative and not all zero. The :space option is ignored
+      #   in this case.
       #
       #   Examples:
       #
@@ -37,6 +38,8 @@ module Prawn
       #       2 on, 1 off, 2 on, 1 off, ...
       #     length = [3, 1, 2, 3]
       #       3 on, 1 off, 2 on, 3 off, 3 on, 1 off, ...
+      #     length = [3, 0, 1]
+      #       3 on, 0 off, 1 on, 3 off, 0 on, 1 off, ...
       #
       # Options may contain the keys :space and :phase
       #
@@ -55,19 +58,28 @@ module Prawn
       def dash(length = nil, options = {})
         return current_dash_state if length.nil?
 
-        if length == 0 || length.kind_of?(Array) && length.any? { |e| e == 0 }
-          fail ArgumentError,
-               "Zero length dashes are invalid. Call #undash to disable dashes."
+        length = Array(length)
+
+        if length.all?(&:zero?)
+          raise ArgumentError,
+            'Zero length dashes are invalid. Call #undash to disable dashes.'
+        elsif length.any?(&:negative?)
+          raise ArgumentError,
+            'Negative numbers are not allowed for dash lengths.'
         end
 
-        self.current_dash_state = { :dash  => length,
-                                    :space => length.kind_of?(Array) ? nil : options[:space] || length,
-                                    :phase => options[:phase] || 0 }
+        length = length.first if length.length == 1
+
+        self.current_dash_state = {
+          dash: length,
+          space: length.is_a?(Array) ? nil : options[:space] || length,
+          phase: options[:phase] || 0
+        }
 
         write_stroke_dash
       end
 
-      alias_method :dash=, :dash
+      alias dash= dash
 
       # Stops dashing, restoring solid stroked lines and curves
       #
@@ -89,7 +101,7 @@ module Prawn
       end
 
       def undashed_setting
-        { :dash => nil, :space => nil, :phase => 0 }
+        { dash: nil, space: nil, phase: 0 }
       end
 
       def current_dash_state=(dash_options)

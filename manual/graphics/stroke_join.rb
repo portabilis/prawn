@@ -1,14 +1,13 @@
-# encoding: utf-8
-#
+# frozen_string_literal: true
+
 # The join style defines how the intersection between two lines is drawn. There
 # are three types: <code>:miter</code> (the default), <code>:round</code> and
 # <code>:bevel</code>
 #
 # Just like <code>cap_style</code>, the difference between styles is better
 # seen with thicker lines.
-#
-require File.expand_path(File.join(File.dirname(__FILE__),
-                                   %w[.. example_helper]))
+
+require_relative '../example_helper'
 
 filename = File.basename(__FILE__).gsub('.rb', '.pdf')
 Prawn::ManualBuilder::Example.generate(filename) do
@@ -16,7 +15,7 @@ Prawn::ManualBuilder::Example.generate(filename) do
 
   self.line_width = 25
 
-  [:miter, :round, :bevel].each_with_index do |style, i|
+  %i[miter round bevel].each_with_index do |style, i|
     self.join_style = style
 
     y = 200 - i * 100

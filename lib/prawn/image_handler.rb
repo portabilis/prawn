@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 # ImageHandler provides a way to register image processors with Prawn
 #
@@ -29,16 +29,16 @@ module Prawn
     end
 
     def unregister(handler)
-      @handlers.reject!{ |h| h == handler }
+      @handlers.reject! { |h| h == handler }
     end
 
     def find(image_blob)
-      handler = @handlers.find{ |h| h.can_render? image_blob }
+      handler = @handlers.find { |h| h.can_render? image_blob }
 
       return handler if handler
 
-      fail Prawn::Errors::UnsupportedImageType,
-           "image file is an unrecognised format"
+      raise Prawn::Errors::UnsupportedImageType,
+        'image file is an unrecognised format'
     end
   end
 end

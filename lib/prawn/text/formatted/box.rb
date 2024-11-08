@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 # text/formatted/rectangle.rb : Implements text boxes with formatted text
 #
@@ -54,8 +54,8 @@ module Prawn
       #     a file or application to be opened locally. A clickable link will be
       #     created to the provided local file or application. If the file is
       #     another PDF, it will be opened in a new window. Note that you must
-      #     explicitly underline and color using the appropriate tags if you which
-      #     to draw attention to the link
+      #     explicitly underline and color using the appropriate tags if you
+      #     which to draw attention to the link
       # <tt>:draw_text_callback</tt>:
       #     if provided, this Proc will be called instead of #draw_text! once
       #     per fragment for every low-level addition of text to the page.
@@ -83,13 +83,14 @@ module Prawn
       #
       # == Exceptions
       #
-      # Raises "Bad font family" if no font family is defined for the current font
+      # Raises "Bad font family" if no font family is defined for the current
+      # font
       #
       # Raises <tt>Prawn::Errors::CannotFit</tt> if not wide enough to print
       # any text
       #
       def formatted_text_box(array, options = {})
-        Text::Formatted::Box.new(array, options.merge(:document => self)).render
+        Text::Formatted::Box.new(array, options.merge(document: self)).render
       end
 
       # Generally, one would use the Prawn::Text::Formatted#formatted_text_box
@@ -137,37 +138,38 @@ module Prawn
         # See Prawn::Text#text_box for valid options
         #
         def initialize(formatted_text, options = {})
-          @inked             = false
+          @inked = false
           Prawn.verify_options(valid_options, options)
-          options            = options.dup
+          options = options.dup
 
           self.class.extensions.reverse_each { |e| extend e }
 
-          @overflow          = options[:overflow] || :truncate
+          @overflow = options[:overflow] || :truncate
           @disable_wrap_by_char = options[:disable_wrap_by_char]
 
           self.original_text = formatted_text
-          @text              = nil
+          @text = nil
 
-          @document          = options[:document]
-          @direction         = options[:direction] || @document.text_direction
-          @fallback_fonts    = options[:fallback_fonts] ||
-                               @document.fallback_fonts
-          @at                = (options[:at] ||
-                               [@document.bounds.left, @document.bounds.top]).dup
-          @width             = options[:width] ||
-                               @document.bounds.right - @at[0]
-          @height            = options[:height] || default_height
-          @align             = options[:align] ||
-                               (@direction == :rtl ? :right : :left)
-          @vertical_align    = options[:valign] || :top
-          @leading           = options[:leading] || @document.default_leading
+          @document = options[:document]
+          @direction = options[:direction] || @document.text_direction
+          @fallback_fonts = options[:fallback_fonts] ||
+            @document.fallback_fonts
+          @at = (
+            options[:at] || [@document.bounds.left, @document.bounds.top]
+          ).dup
+          @width = options[:width] ||
+            @document.bounds.right - @at[0]
+          @height = options[:height] || default_height
+          @align = options[:align] ||
+            (@direction == :rtl ? :right : :left)
+          @vertical_align = options[:valign] || :top
+          @leading = options[:leading] || @document.default_leading
           @character_spacing = options[:character_spacing] ||
-                               @document.character_spacing
-          @mode              = options[:mode] || @document.text_rendering_mode
-          @rotate            = options[:rotate] || 0
-          @rotate_around     = options[:rotate_around] || :upper_left
-          @single_line       = options[:single_line]
+            @document.character_spacing
+          @mode = options[:mode] || @document.text_rendering_mode
+          @rotate = options[:rotate] || 0
+          @rotate_around = options[:rotate_around] || :upper_left
+          @single_line = options[:single_line]
           @draw_text_callback = options[:draw_text_callback]
 
           # if the text rendering mode is :unknown, force it back to :fill
@@ -183,25 +185,28 @@ module Prawn
             @overflow = :truncate
           end
           @min_font_size = options[:min_font_size] || 5
-          if options[:kerning].nil? then
+          if options[:kerning].nil?
             options[:kerning] = @document.default_kerning?
           end
-          @options = { :kerning => options[:kerning],
-                       :size    => options[:size],
-                       :style   => options[:style] }
+          @options = {
+            kerning: options[:kerning],
+            size: options[:size],
+            style: options[:style]
+          }
 
           super(formatted_text, options)
         end
 
-        # Render text to the document based on the settings defined in initialize.
+        # Render text to the document based on the settings defined in
+        # initialize.
         #
-        # In order to facilitate look-ahead calculations, <tt>render</tt> accepts
-        # a <tt>:dry_run => true</tt> option. If provided, then everything is
-        # executed as if rendering, with the exception that nothing is drawn on
-        # the page. Useful for look-ahead computations of height, unprinted text,
-        # etc.
+        # In order to facilitate look-ahead calculations, <tt>render</tt>
+        # accepts a <tt>:dry_run => true</tt> option. If provided, then
+        # everything is executed as if rendering, with the exception that
+        # nothing is drawn on the page. Useful for look-ahead computations of
+        # height, unprinted text, etc.
         #
-        # Returns any text that did not print under the current settings
+        # Returns any text that did not print under the current settings.
         #
         def render(flags = {})
           unprinted_text = []
@@ -217,11 +222,12 @@ module Prawn
                   shrink_to_fit(text) if @overflow == :shrink_to_fit
                   process_vertical_alignment(text)
                   @inked = true unless flags[:dry_run]
-                  if @rotate != 0 && @inked
-                    unprinted_text = render_rotated(text)
-                  else
-                    unprinted_text = wrap(text)
-                  end
+                  unprinted_text =
+                    if @rotate != 0 && @inked
+                      render_rotated(text)
+                    else
+                      wrap(text)
+                    end
                   @inked = false
                 end
               end
@@ -229,7 +235,7 @@ module Prawn
           end
 
           unprinted_text.map do |e|
-            e.merge(:text => @document.font.to_utf8(e[:text]))
+            e.merge(text: @document.font.to_utf8(e[:text]))
           end
         end
 
@@ -243,13 +249,16 @@ module Prawn
         #
         def height
           return 0 if @baseline_y.nil? || @descender.nil?
+
           (@baseline_y - @descender).abs
         end
 
         # <tt>fragment</tt> is a Prawn::Text::Formatted::Fragment object
         #
-        def draw_fragment(fragment, accumulated_width = 0, line_width = 0, word_spacing = 0) #:nodoc:
-          case(@align)
+        def draw_fragment(
+          fragment, accumulated_width = 0, line_width = 0, word_spacing = 0
+        ) #:nodoc:
+          case @align
           when :left
             x = @at[0]
           when :center
@@ -257,11 +266,15 @@ module Prawn
           when :right
             x = @at[0] + @width - line_width
           when :justify
-            if @direction == :ltr
-              x = @at[0]
-            else
-              x = @at[0] + @width - line_width
-            end
+            x =
+              if @direction == :ltr
+                @at[0]
+              else
+                @at[0] + @width - line_width
+              end
+          else
+            raise ArgumentError,
+              'align must be one of :left, :right, :center or :justify symbols'
           end
 
           x += accumulated_width
@@ -276,15 +289,21 @@ module Prawn
           if @inked
             draw_fragment_underlays(fragment)
 
-            @document.word_spacing(word_spacing) {
+            @document.word_spacing(word_spacing) do
               if @draw_text_callback
-                @draw_text_callback.call(fragment.text, :at => [x, y],
-                                                        :kerning => @kerning)
+                @draw_text_callback.call(
+                  fragment.text,
+                  at: [x, y],
+                  kerning: @kerning
+                )
               else
-                @document.draw_text!(fragment.text, :at => [x, y],
-                                                    :kerning => @kerning)
+                @document.draw_text!(
+                  fragment.text,
+                  at: [x, y],
+                  kerning: @kerning
+                )
               end
-            }
+            end
 
             draw_fragment_overlays(fragment)
           end
@@ -325,23 +344,24 @@ module Prawn
 
         # @private
         def self.inherited(base)
+          super
           extensions.each { |e| base.extensions << e }
         end
 
         def valid_options
-          PDF::Core::Text::VALID_OPTIONS + [
-            :at,
-            :height, :width,
-            :align, :valign,
-            :rotate, :rotate_around,
-            :overflow, :min_font_size,
-            :disable_wrap_by_char,
-            :leading, :character_spacing,
-            :mode, :single_line,
-            :document,
-            :direction,
-            :fallback_fonts,
-            :draw_text_callback
+          PDF::Core::Text::VALID_OPTIONS + %i[
+            at
+            height width
+            align valign
+            rotate rotate_around
+            overflow min_font_size
+            disable_wrap_by_char
+            leading character_spacing
+            mode single_line
+            document
+            direction
+            fallback_fonts
+            draw_text_callback
           ]
         end
 
@@ -356,7 +376,7 @@ module Prawn
         end
 
         def original_text
-          @original_array.collect(&:dup)
+          @original_array.map(&:dup)
         end
 
         def original_text=(formatted_text)
@@ -407,10 +427,14 @@ module Prawn
 
           @document.save_font do
             hash[:text].each_char do |char|
-              font_glyph_pairs << [find_font_for_this_glyph(char,
-                                                            fragment_font,
-                                                            fallback_fonts.dup),
-                                   char]
+              font_glyph_pairs << [
+                find_font_for_this_glyph(
+                  char,
+                  fragment_font,
+                  fallback_fonts.dup
+                ),
+                char
+              ]
             end
           end
 
@@ -426,7 +450,7 @@ module Prawn
 
         def find_font_for_this_glyph(char, current_font, fallback_fonts)
           @document.font(current_font)
-          if fallback_fonts.length == 0 || @document.font.glyph_present?(char)
+          if fallback_fonts.empty? || @document.font.glyph_present?(char)
             current_font
           else
             find_font_for_this_glyph(char, fallback_fonts.shift, fallback_fonts)
@@ -439,7 +463,7 @@ module Prawn
           current_font = nil
 
           font_glyph_pairs.each do |font, char|
-            if font != current_font || fragments.count == 0
+            if font != current_font || fragments.count.zero?
               current_font = font
               fragment = hash.dup
               fragment[:text] = char
@@ -454,8 +478,8 @@ module Prawn
         end
 
         def move_baseline_down
-          if @baseline_y == 0
-            @baseline_y  = -@ascender
+          if @baseline_y.zero?
+            @baseline_y = -@ascender
           else
             @baseline_y -= (@line_height + @leading)
           end
@@ -479,7 +503,11 @@ module Prawn
           # we need to wait until render() is called so that the fonts are set
           # up properly for wrapping. So guard with a boolean to ensure this is
           # only run once.
-          return if defined?(@vertical_alignment_processed) && @vertical_alignment_processed
+          if defined?(@vertical_alignment_processed) &&
+              @vertical_alignment_processed
+            return
+          end
+
           @vertical_alignment_processed = true
 
           return if @vertical_align == :top
@@ -523,7 +551,7 @@ module Prawn
           # document.process_text_options sets the font
           @document.process_text_options(@options)
           @font_size = @options[:size]
-          @kerning   = @options[:kerning]
+          @kerning = @options[:kerning]
         end
 
         def render_rotated(text)
@@ -547,7 +575,7 @@ module Prawn
             y = @at[1]
           end
 
-          @document.rotate(@rotate, :origin => [x, y]) do
+          @document.rotate(@rotate, origin: [x, y]) do
             unprinted_text = wrap(text)
           end
           unprinted_text
@@ -571,41 +599,52 @@ module Prawn
 
         def draw_fragment_overlay_link(fragment)
           return unless fragment.link
+
           box = fragment.absolute_bounding_box
-          @document.link_annotation(box,
-                                    :Border => [0, 0, 0],
-                                    :A => { :Type => :Action,
-                                            :S => :URI,
-                                            :URI => PDF::Core::LiteralString.new(fragment.link) })
+          @document.link_annotation(
+            box,
+            Border: [0, 0, 0],
+            A: {
+              Type: :Action,
+              S: :URI,
+              URI: PDF::Core::LiteralString.new(fragment.link)
+            }
+          )
         end
 
         def draw_fragment_overlay_anchor(fragment)
           return unless fragment.anchor
+
           box = fragment.absolute_bounding_box
-          @document.link_annotation(box,
-                                    :Border => [0, 0, 0],
-                                    :Dest => fragment.anchor)
+          @document.link_annotation(
+            box,
+            Border: [0, 0, 0],
+            Dest: fragment.anchor
+          )
         end
 
         def draw_fragment_overlay_local(fragment)
           return unless fragment.local
+
           box = fragment.absolute_bounding_box
-          @document.link_annotation(box,
-                                    :Border => [0, 0, 0],
-                                    :A => { :Type => :Action,
-                                            :S => :Launch,
-                                            :F => PDF::Core::LiteralString.new(fragment.local),
-                                            :NewWindow => true })
+          @document.link_annotation(
+            box,
+            Border: [0, 0, 0],
+            A: {
+              Type: :Action,
+              S: :Launch,
+              F: PDF::Core::LiteralString.new(fragment.local),
+              NewWindow: true
+            }
+          )
         end
 
         def draw_fragment_overlay_styles(fragment)
-          underline = fragment.styles.include?(:underline)
-          if underline
+          if fragment.styles.include?(:underline)
             @document.stroke_line(fragment.underline_points)
           end
 
-          strikethrough = fragment.styles.include?(:strikethrough)
-          if strikethrough
+          if fragment.styles.include?(:strikethrough)
             @document.stroke_line(fragment.strikethrough_points)
           end
         end

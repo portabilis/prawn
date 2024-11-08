@@ -1,19 +1,17 @@
-# encoding: utf-8
-#
+# frozen_string_literal: true
+
 # We can change the stroke and fill colors providing an HTML rgb 6 digit color
 # code string ("AB1234") or 4 values for CMYK.
-#
-require File.expand_path(File.join(File.dirname(__FILE__),
-                                   %w[.. example_helper]))
+
+require_relative '../example_helper'
 
 filename = File.basename(__FILE__).gsub('.rb', '.pdf')
 Prawn::ManualBuilder::Example.generate(filename) do
   stroke_axis
 
-  # Fill with Yellow using RGB
-  fill_color "FFFFCC"
-  fill_polygon [50, 150], [150, 200], [250, 150],
-               [250, 50], [150, 0], [50, 50]
+  # Fill with Yellow using RGB (Unlike css, there is no leading #)
+  fill_color 'FFFFCC'
+  fill_polygon [50, 150], [150, 200], [250, 150], [250, 50], [150, 0], [50, 50]
 
   # Stroke with Purple using CMYK
   stroke_color 50, 100, 0, 0
